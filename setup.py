@@ -14,11 +14,11 @@ def readme() -> str:
 
 
 setuptools.setup(
-    name="streamlit-echarts",
-    version="0.5.0",
-    author="Fanilo ANDRIANASOLO",
-    author_email="andfanilo@gmail.com",
-    description="Echarts custom component for Streamlit",
+    name="lihaowei/streamlit-echarts",
+    version="0.1.0",
+    author="lihaowei",
+    author_email="646300129@qq.com",
+    description="Echarts custom component for Streamlit,fork from andfanilo/streamlit-echarts",
     long_description=readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/andfanilo/streamlit-echarts",

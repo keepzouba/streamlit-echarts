@@ -137,65 +137,65 @@ def st_pyecharts(
 
 
 
-def create_chart():
-    # 示例数据和符号大小
-    data = [[1, 1], [2, 1.2], [3, 2.2], [4, 4], [5, 5]]  # 示例数据
-    # data = [10,15,23,29,36]  # 示例数据
-    symbolSize = 20  # 符号大小
+# def create_chart():
+#     # 示例数据和符号大小
+#     data = [[1, 1], [2, 1.2], [3, 2.2], [4, 4], [5, 5]]  # 示例数据
+#     # data = [10,15,23,29,36]  # 示例数据
+#     symbolSize = 20  # 符号大小
 
-    options = {
-        "xAxis": {
-            "type": "value",
-            "data": [1,2,3,4,5],
-            'axisLine': { 'onZero': 'false' },
-        },
-        "yAxis": [
-                {
-                    'min': 0,
-                    'max': 6,
-                    "type": "value",
+#     options = {
+#         "xAxis": {
+#             "type": "value",
+#             "data": [1,2,3,4,5],
+#             'axisLine': { 'onZero': 'false' },
+#         },
+#         "yAxis": [
+#                 {
+#                     'min': 0,
+#                     'max': 6,
+#                     "type": "value",
               
-                }
-            ],
-        "series": [{
-            'id':'line1',
-            'name': '音高',
+#                 }
+#             ],
+#         "series": [{
+#             'id':'line1',
+#             'name': '音高',
  
 
-            "type": "line",
-            'symbolSize': symbolSize,
-            'smooth':'true',
-            "data": data,
-        }],
-        'tooltip': {
-            # 'triggerOn': 'none',
-            'trigger': 'axis',
-            'axisPointer': {
-                'type': 'cross',
-                'crossStyle': {
-                    'color': '#999'
-                }
-      },
-    },
+#             "type": "line",
+#             'symbolSize': symbolSize,
+#             'smooth':'true',
+#             "data": data,
+#         }],
+#         'tooltip': {
+#             # 'triggerOn': 'none',
+#             'trigger': 'axis',
+#             'axisPointer': {
+#                 'type': 'cross',
+#                 'crossStyle': {
+#                     'color': '#999'
+#                 }
+#       },
+#     },
 
 
-    }
-    return options
+#     }
+#     return options
 
 
 
-# Streamlit 主函数
-def main():
-    # st.title('ECharts in Streamlit')
+# # Streamlit 主函数
+# def main():
+#     # st.title('ECharts in Streamlit')
 
-    chart_options = create_chart()
-    events = {
-        "click":"function(params) { return [params.type, params.name, params.value] }",
-        "select":"function(params) { return  [params.type, params.name, params.value] }"
-    }
-    value =  st_echarts(options=chart_options,events=events, height="400px")
-    print(value)
+#     chart_options = create_chart()
+#     events = {
+#         "click":"function(params) { return [params.type, params.name, params.value] }",
+#         "select":"function(params) { return  [params.type, params.name, params.value] }"
+#     }
+#     value =  st_echarts(options=chart_options,events=events, height="400px")
+#     print(value)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 

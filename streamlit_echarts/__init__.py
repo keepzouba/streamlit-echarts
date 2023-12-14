@@ -146,7 +146,7 @@ def st_pyecharts(
 #     options = {
 #         "xAxis": {
 #             "type": "value",
-#             "data": [1,2,3,4,5],
+#             # "data": [1,2,3,4,5],
 #             'axisLine': { 'onZero': 'false' },
 #         },
 #         "yAxis": [
@@ -157,6 +157,24 @@ def st_pyecharts(
               
 #                 }
 #             ],
+#         'visualMap': {
+#             'type': 'piecewise',
+#             'show': 'false',
+#             'dimension': 0,
+#             'seriesIndex': 0,
+#             'pieces': [
+#                 {
+#                     'gt': 1,
+#                     'lt': 3,
+#                     'color': 'rgba(180, 180, 180, 0.4)'
+#                 },
+#                 {
+#                     'gt': 4,
+#                     'lt': 5,
+#                     'color': 'rgba(234, 56, 18, 0.4)'
+#                 }
+#             ]
+#         },
 #         "series": [{
 #             'id':'line1',
 #             'name': '音高',
@@ -165,6 +183,17 @@ def st_pyecharts(
 #             "type": "line",
 #             'symbolSize': symbolSize,
 #             'smooth':'true',
+#             'lineStyle': {
+#                 'color': '#5470C6',
+#                 'width': 5
+#             },
+
+#             'markLine': {
+#                 'symbol': ['none', 'none'],
+#                 'label': { 'show': 'false' },
+#                 'data': [{ 'xAxis': 1 }, { 'xAxis': 3 }, { 'xAxis': 4 }, { 'xAxis': 5 }]
+#             },
+#             'areaStyle': {},
 #             "data": data,
 #         }],
 #         'tooltip': {
@@ -190,8 +219,7 @@ def st_pyecharts(
 
 #     chart_options = create_chart()
 #     events = {
-#         "click":"function(params) { return [params.type, params.name, params.value] }",
-#         "select":"function(params) { return  [params.type, params.name, params.value] }"
+#         # "click":"function(params) { return [params.type, params.name, params.value] }",
 #     }
 #     value =  st_echarts(options=chart_options,events=events, height="400px")
 #     print(value)

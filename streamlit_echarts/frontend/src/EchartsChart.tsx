@@ -97,6 +97,8 @@ const EchartsChart = (props: ComponentProps) => {
   const handlerCleanOptions = (options: any) => {
     // 将options中字符串为'true'和'false' 的数据转换成布尔值
 
+    console.log("handlerCleanOptions", options)
+
     // 遍历options
     for (const key in options) {
       if (options.hasOwnProperty(key)) {
@@ -169,6 +171,17 @@ const EchartsChart = (props: ComponentProps) => {
     // }
   })
 
+  // 监听图表的dataZoom事件
+  const onZoom = useCallback(
+    (params: any) => {
+      console.log("onZoom", params)
+      drawGraphic(cleanOptions)
+    },
+    [cleanOptions]
+  )
+
+  cleanOnEvents["dataZoom"] = onZoom
+
   useEffect(() => {
     if (null === echartsElementRef.current) {
       return
@@ -209,6 +222,8 @@ const EchartsChart = (props: ComponentProps) => {
 
   const drawGraphic = useCallback(
     (options: { series: any }) => {
+      console.log("drawGraphic", options)
+
       // 根据cleanOptions中的series的数组长度，判断有几条折线,根据每条折线的数据长度，判断有几个点,给每个点添加拖拽事件
 
       const series = options.series
@@ -217,87 +232,101 @@ const EchartsChart = (props: ComponentProps) => {
 
       const myChart = echartsInstanceRef.current
 
+      // 必须是type为line的series
+
       setTimeout(() => {
         if (Array.isArray(series)) {
           series.forEach((item1, index1) => {
             if (Array.isArray(item1.data)) {
-              item1.data.forEach((item2: any, index2: any) => {
-                const position = myChart?.convertToPixel(
-                  {
-                    seriesIndex: index1,
-                  },
-                  item2
-                )
-
-                console.log("position", position, item2)
-
-                // 绘制可以拖拽的点
-                graphic.push({
-                  type: "circle",
-                  position: position,
-                  id: "circle-seriesIndex" + index1 + "-dataIndex" + index2,
-                  shape: {
-                    cx: 0,
-                    cy: 0,
-                    r: symbolSize / 2,
-                  },
-                  style: {
-                    fill: item1.lineStyle.color,
-                  },
-                  // invisible: true,
-                  draggable: "vertical",
-
-                  ondrag: function (dx: any, dy: any) {
-                    onPointDragging({
-                      dataIndex: index2,
+              if (item1.type === "line") {
+                item1.data.forEach((item2: any, index2: any) => {
+                  const position = myChart?.convertToPixel(
+                    {
                       seriesIndex: index1,
-                      position: [this.x, this.y],
-                    })
-                  },
+                    },
+                    item2
+                  )
 
-                  onmouseout: function (dx: any, dy: any) {
-                    console.log("onmouseout")
+                  console.log("position", position, item2)
 
-                    // 对比前后的数据，如果有变化，就更新
-                    const prePos = position
+                  // 绘制可以拖拽的点
+                  graphic.push({
+                    type: "circle",
+                    position: position,
+                    id: "circle-seriesIndex" + index1 + "-dataIndex" + index2,
+                    shape: {
+                      cx: 0,
+                      cy: 0,
+                      r: symbolSize / 2,
+                    },
+                    style: {
+                      fill: item1.lineStyle.color,
+                    },
+                    // invisible: true,
+                    draggable: "vertical",
 
-                    const curPos = [this.x, this.y]
+                    ondrag: function (dx: any, dy: any) {
+                      onPointDragging({
+                        dataIndex: index2,
+                        seriesIndex: index1,
+                        position: [this.x, this.y],
+                      })
+                    },
 
-                    console.log("prePos", prePos, "curPos", curPos)
+                    onmousemove: function (dx: any, dy: any) {
+                      console.log("onmousemove")
 
-                    // 只需要对比y轴数据的变化
-                    if (prePos && prePos[1] === curPos[1]) return
+                      myChart?.dispatchAction({
+                        type: "showTip",
+                        seriesIndex: 0,
+                        dataIndex: index2,
+                      })
+                    },
 
-                    Streamlit.setComponentValue(series)
-                  },
+                    onmouseout: function (dx: any, dy: any) {
+                      console.log("onmouseout")
 
-                  z: 100,
+                      // 对比前后的数据，如果有变化，就更新
+                      const prePos = position
+
+                      const curPos = [this.x, this.y]
+
+                      console.log("prePos", prePos, "curPos", curPos)
+
+                      // 只需要对比y轴数据的变化
+                      if (prePos && prePos[1] === curPos[1]) return
+
+                      Streamlit.setComponentValue(series)
+                    },
+
+                    z: 100,
+                  })
+
+                  // 绘制一个一个原点,表示初始位置
+                  graphic.push({
+                    type: "circle",
+                    position: position,
+                    id:
+                      "circle-seriesIndex" +
+                      index1 +
+                      "-dataIndex" +
+                      index2 +
+                      "origin",
+                    shape: {
+                      cx: 0,
+                      cy: 0,
+                      r: symbolSize / 3,
+                    },
+                    style: {
+                      fill: "rgba(12, 11, 10,1)",
+                    },
+                    // invisible: true,
+                    // draggable: false,
+
+                    z: 99,
+                  })
                 })
-
-                // 绘制一个一个原点,表示初始位置
-                graphic.push({
-                  type: "circle",
-                  position: position,
-                  id:
-                    "circle-seriesIndex" +
-                    index1 +
-                    "-dataIndex" +
-                    index2 +
-                    "origin",
-                  shape: {
-                    cx: 0,
-                    cy: 0,
-                    r: symbolSize / 3,
-                  },
-                  style: {
-                    fill: "rgba(12, 11, 10,1)",
-                  },
-                  // invisible: true,
-                  // draggable: false,
-
-                  z: 99,
-                })
-              })
+              }
             }
           })
         }
@@ -314,13 +343,7 @@ const EchartsChart = (props: ComponentProps) => {
     drawGraphic(cleanOptions)
   }, [drawGraphic, cleanOptions])
 
-  // useEffect(() => {
-  //   window.addEventListener("resize", updatePosition)
-  // }, [])
-
-  // function updatePosition() {
-  //   handlerCleanOptions(cleanOptions)
-  // }
+  console.log("ReactEcharts")
 
   return (
     <>

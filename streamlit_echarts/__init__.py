@@ -20,10 +20,9 @@ else:
     _component_func = components.declare_component("st_echarts", path=build_dir)
 
 
-
 class Map:
     def __init__(
-        self, map_name: str, geo_json: Dict, special_areas: Optional[Dict] = None
+            self, map_name: str, geo_json: Dict, special_areas: Optional[Dict] = None
     ) -> None:
         self.map_name: str = map_name
         self.geo_json: Dict = geo_json
@@ -44,14 +43,14 @@ class JsCode:
 
 
 def st_echarts(
-    options: Dict,
-    theme: Union[str, Dict] = "",
-    events: Dict[str, str] = None,
-    height: str = "300px",
-    width: str = "100%",
-    renderer: str = "canvas",
-    map: Map = None,
-    key: str = None,
+        options: Dict,
+        theme: Union[str, Dict] = "",
+        events: Dict[str, str] = None,
+        height: str = "300px",
+        width: str = "100%",
+        renderer: str = "canvas",
+        map: Map = None,
+        key: str = None,
 ):
     """Display an ECharts instance in Streamlit
 
@@ -90,15 +89,16 @@ def st_echarts(
         default=None,
     )
 
+
 def st_pyecharts(
-    chart: Base,
-    theme: Union[str, Dict] = "",
-    events: Dict[str, str] = None,
-    height: str = "300px",
-    width: str = "100%",
-    renderer: str = "canvas",
-    map: Map = None,
-    key: str = None,
+        chart: Base,
+        theme: Union[str, Dict] = "",
+        events: Dict[str, str] = None,
+        height: str = "300px",
+        width: str = "100%",
+        renderer: str = "canvas",
+        map: Map = None,
+        key: str = None,
 ):
     """Display a PyECharts instance in Streamlit
 
@@ -136,27 +136,34 @@ def st_pyecharts(
     )
 
 
-
 # def create_chart():
 #     # 示例数据和符号大小
-#     data = [[1, 1], [2, 1.2], [3, 2.2], [4, 4], [5, 5]]  # 示例数据
-#     # data = [10,15,23,29,36]  # 示例数据
+#     # data = [[1, 1], [2, 1.2], [3, 2.2], [4, 4], [5, 5]]  # 示例数据
+#     data = [[0, 5.0392866134643555, '_'], [1, 5.067362308502197, '_'], [2, 5.051149845123291, '_'],
+#             [3, 5.074381351470947, '_'], [4, 5.067855358123779, '_'], [5, 5.002144813537598, '你1'],
+#             [6, 5.013886451721191, '你2'], [7, 4.801637649536133, '你3']]  # 示例数据
 #     symbolSize = 20  # 符号大小
+
+#     x_data = []
+
+#     for i in range(len(data)):
+#         x_data.append(data[i][2])
 
 #     options = {
 #         "xAxis": {
-#             "type": "value",
-#             # "data": [1,2,3,4,5],
-#             'axisLine': { 'onZero': 'false' },
+#             "type": "category",
+#             "data": x_data,
+#             'boundaryGap':'false',
+#             'axisLine': {'onZero': 'false'},
 #         },
 #         "yAxis": [
-#                 {
-#                     'min': 0,
-#                     'max': 6,
-#                     "type": "value",
-              
-#                 }
-#             ],
+#             {
+#                 'min': 0,
+#                 'max': 6,
+#                 "type": "value",
+
+#             }
+#         ],
 #         'visualMap': {
 #             'type': 'piecewise',
 #             'show': 'false',
@@ -176,13 +183,11 @@ def st_pyecharts(
 #             ]
 #         },
 #         "series": [{
-#             'id':'line1',
+#             'id': 'line1',
 #             'name': '音高',
- 
-
 #             "type": "line",
 #             'symbolSize': symbolSize,
-#             'smooth':'true',
+#             'smooth': 'true',
 #             'lineStyle': {
 #                 'color': '#5470C6',
 #                 'width': 5
@@ -190,11 +195,12 @@ def st_pyecharts(
 
 #             'markLine': {
 #                 'symbol': ['none', 'none'],
-#                 'label': { 'show': 'false' },
-#                 'data': [{ 'xAxis': 1 }, { 'xAxis': 3 }, { 'xAxis': 4 }, { 'xAxis': 5 }]
+#                 'label': {'show': 'false'},
+#                 'data': [{'xAxis': 1}, {'xAxis': 3}, {'xAxis': 4}, {'xAxis': 5}]
 #             },
 #             'areaStyle': {},
 #             "data": data,
+
 #         }],
 #         'tooltip': {
 #             # 'triggerOn': 'none',
@@ -204,13 +210,31 @@ def st_pyecharts(
 #                 'crossStyle': {
 #                     'color': '#999'
 #                 }
-#       },
-#     },
+#             },
+#         },
 
+#         "dataZoom": [
+
+#             # {
+#             #     "type": 'inside',
+#             #     "start": 0,
+#             #     'showDetail': 'true',
+#             #     'realtime': 'false',
+#             #     "end": 50,
+#             # },
+#             {
+#                 "type": 'slider',
+#                 "start": 0,
+#                 "end": 50,
+#                 'showDetail': 'true',
+#                 'realtime': 'false',
+#                 'zoomLock': 'true',
+#                 'brushSelect ': 'false',
+#             }
+#         ],
 
 #     }
 #     return options
-
 
 
 # # Streamlit 主函数
@@ -221,9 +245,9 @@ def st_pyecharts(
 #     events = {
 #         # "click":"function(params) { return [params.type, params.name, params.value] }",
 #     }
-#     value =  st_echarts(options=chart_options,events=events, height="400px")
+#     value = st_echarts(options=chart_options, events=events, height="400px")
 #     print(value)
+
 
 # if __name__ == "__main__":
 #     main()
-

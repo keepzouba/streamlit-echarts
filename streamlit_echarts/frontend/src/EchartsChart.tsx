@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
   ComponentProps,
   Streamlit,
@@ -32,8 +32,6 @@ interface PythonArgs {
   renderer: "canvas" | "svg"
   map: Map
 }
-
-const symbolSize = 20
 
 const EchartsChart = (props: ComponentProps) => {
   const echartsElementRef = useRef<ReactEcharts>(null)
@@ -97,7 +95,7 @@ const EchartsChart = (props: ComponentProps) => {
   const handlerCleanOptions = (options: any) => {
     // 将options中字符串为'true'和'false' 的数据转换成布尔值
 
-    console.log("handlerCleanOptions", options)
+    // console.log("handlerCleanOptions", options)
 
     // 遍历options
     for (const key in options) {
@@ -134,6 +132,10 @@ const EchartsChart = (props: ComponentProps) => {
 
   // no need for memo, react-echarts uses fast-deep-equal to compare option/event change and update on change
   const cleanOptions = handlerCleanOptions(evalStringToFunctionDeepMap(options))
+  const cache = useRef<any>(cleanOptions)
+
+  // const [cache, setCache] = useState<any>(cleanOptions)
+
   const cleanOnEvents: any = {}
   const eventKeys = Object.keys(onEvents)
   console.log("cleanOptions", cleanOptions)
@@ -161,7 +163,7 @@ const EchartsChart = (props: ComponentProps) => {
     cleanOnEvents[key] = useCallback(
       (params: any) => {
         const s = evalStringToFunction(eventFunction)(params)
-        Streamlit.setComponentValue(s)
+        // Streamlit.setComponentValue(s)
       },
       [eventFunction]
     )
@@ -206,16 +208,20 @@ const EchartsChart = (props: ComponentProps) => {
         origin.position
       )
 
-      // console.log("this.position", origin, pos)
-
-      // console.log("series", series)
-
       series[seriesIndex].data[dataIndex] = pos
 
       // 用更新后的 data，重绘折线图。
       myChart?.setOption({
         series: series,
       })
+
+      const op = cache.current
+
+      op.series[seriesIndex].data[dataIndex] = [
+        ...series[seriesIndex].data[dataIndex],
+        op.series[seriesIndex].data[dataIndex][2],
+      ]
+      // cache.current = op
     },
     []
   )
@@ -247,7 +253,7 @@ const EchartsChart = (props: ComponentProps) => {
                     item2
                   )
 
-                  console.log("position", position, item2)
+                  // console.log("position", position, item2)
 
                   // 绘制可以拖拽的点
                   graphic.push({
@@ -257,10 +263,11 @@ const EchartsChart = (props: ComponentProps) => {
                     shape: {
                       cx: 0,
                       cy: 0,
-                      r: symbolSize / 2,
+                      r: item1.symbolSize,
                     },
                     style: {
-                      fill: item1.lineStyle.color,
+                      fill: item1.itemStyle.color,
+                      opacity: item1.itemStyle.opacity,
                     },
                     // invisible: true,
                     draggable: "vertical",
@@ -276,27 +283,29 @@ const EchartsChart = (props: ComponentProps) => {
                     onmousemove: function (dx: any, dy: any) {
                       console.log("onmousemove")
 
-                      myChart?.dispatchAction({
-                        type: "showTip",
-                        seriesIndex: 0,
-                        dataIndex: index2,
-                      })
+                      // myChart?.dispatchAction({
+                      //   type: "showTip",
+                      //   seriesIndex: 0,
+                      //   dataIndex: index2,
+                      // })
                     },
 
-                    onmouseout: function (dx: any, dy: any) {
-                      console.log("onmouseout")
-
+                    ondragend: function (dx: any, dy: any) {
                       // 对比前后的数据，如果有变化，就更新
                       const prePos = position
 
                       const curPos = [this.x, this.y]
 
-                      console.log("prePos", prePos, "curPos", curPos)
+                      // console.log("prePos", prePos, "curPos", curPos)
+
+                      console.log("cache.current", cache.current)
 
                       // 只需要对比y轴数据的变化
                       if (prePos && prePos[1] === curPos[1]) return
 
-                      Streamlit.setComponentValue(series)
+                      const new_series = cache.current.series
+
+                      Streamlit.setComponentValue(new_series)
                     },
 
                     z: 100,
@@ -315,10 +324,11 @@ const EchartsChart = (props: ComponentProps) => {
                     shape: {
                       cx: 0,
                       cy: 0,
-                      r: symbolSize / 3,
+                      r: item1.originSymbolSize,
                     },
                     style: {
-                      fill: "rgba(12, 11, 10,1)",
+                      fill: item1.originItemStyle.color,
+                      opacity: item1.originItemStyle.opacity,
                     },
                     // invisible: true,
                     // draggable: false,
@@ -347,6 +357,24 @@ const EchartsChart = (props: ComponentProps) => {
 
   return (
     <>
+      <button
+        onClick={() => {
+          const myChart = echartsInstanceRef.current
+          const op = myChart?.getOption()
+
+          // 取出series中每项数据中的data
+          const data =
+            op?.series && op.series.length > 0
+              ? JSON.stringify(op.series[0].data)
+              : ""
+
+          console.log("op", op)
+
+          // Streamlit.setComponentValue(data)
+        }}
+      >
+        更新图表
+      </button>
       <ReactEcharts
         ref={echartsElementRef}
         option={cleanOptions}

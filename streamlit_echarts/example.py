@@ -45,16 +45,28 @@ def create_chart():
         x_data.append(data[i][2])
 
     options = {
+        'tooltip': {
+            'triggerOn': "none",
+            'formatter': '--x_x--0_0--function (params) { return params.seriesName +"<br>" + params.name +": " '
+                         '+params.data[1].toFixed(2)}--x_x--0_0--'
+        },
+        'grid': {
+
+            'left': '3%',
+            'right': '4%',
+        },
 
         "xAxis": {
-            "scale": True,
+            # "scale": True,
             "type": "category",
             'boundaryGap': 'false',
-            "data": x_data,
+            # "data": x_data,
+            'data': ['0_', '1ni2[你]', '2_', '3hao6[好]', '4_', '5a5[啊]', '6_', '7，[，]', '8_', '9peng2[朋]', '10_',
+                     '11iou5[友]', '12_', '13。[。]', '14_'],
             'axisLine': {'onZero': 'false'},
         },
         "yAxis": {
-            "scale": True,
+            # "scale": True,
             "type": "value",
 
         },
@@ -64,25 +76,25 @@ def create_chart():
             'dimension': 0,
             'seriesIndex': 0,
             'pieces': [
-                {
-                    'gt': 1,
-                    'lt': 3,
-                    'color': 'rgba(180, 180, 180, 0.4)'
-                },
-                {
-                    'gt': 4,
-                    'lt': 5,
-                    'color': 'rgba(234, 56, 18, 0.4)'
-                }
+                # {
+                #     'gt': 1,
+                #     'lt': 3,
+                #     'color': 'rgba(180, 180, 180, 0.4)'
+                # },
+                # {
+                #     'gt': 4,
+                #     'lt': 5,
+                #     'color': 'rgba(234, 56, 18, 0.4)'
+                # }
             ]
         },
         "series": [{
             'id': 'line1',
             'name': '音高',
-
+            "draggable": "true",
             "type": "line",
             'symbolSize': 6,
-            'origin_symbolSize': 6,
+            'origin_symbolSize': 3,
             'smooth': 'true',
             'itemStyle': {
                 'color': '#4371ec',
@@ -97,23 +109,19 @@ def create_chart():
                 'color': '#5470C6',
                 'width': 5
             },
-
-            'markLine': {
-                'symbol': ['none', 'none'],
-                'label': {'show': 'false'},
-                'data': [{'xAxis': 1}, {'xAxis': 3}, {'xAxis': 4}, {'xAxis': 5}]
-            },
             'areaStyle': {},
-            "data": data,
-        }],
-        'dataZoom': [{
-            "type": 'slider',
-            "start": 0,
-            "end": 10,
-            'showDetail': 'true',
-            'realtime': 'false',
-            'zoomLock': 'true',
-        }],
+            'data': [[0, 0.9055825471878052], [1, 0.8982847929000854], [2, 0.9017429735660553],
+                     [3, 0.8966277837753296], [4, 0.8751828074455261], [5, 0.8992016911506653], [6, 0.8961976170539856],
+                     [7, 0.9060178399085999], [8, 0.902618408203125], [9, 0.8879055976867676], [10, 0.8599608540534973],
+                     [11, 0.8834148049354553], [12, 0.9018626809120178], [13, 0.909054696559906],
+                     [14, 0.9035203456878662]],
+            'sourceData': [[0, 0.9055825471878052], [1, 0.8982847929000854], [2, 0.9182042479515076],
+                           [3, 0.8966277837753296], [4, 0.8751828074455261], [5, 0.8992016911506653],
+                           [6, 0.8961976170539856], [7, 0.9060178399085999], [8, 0.902618408203125],
+                           [9, 0.8879055976867676], [10, 0.8599608540534973], [11, 0.8834148049354553],
+                           [12, 0.9018626809120178], [13, 0.909054696559906], [14, 0.9035203456878662]]}],
+        'listeningDataZoom': 'true',  # 如果这个数据需要拐点进行拖拽,而且设置了dataZoom,那么需要设置这个参数为true
+        'dataZoom': [{'type': 'slider', 'start': 0, 'end': 100, 'showDetail': True, 'realtime': False}],
 
     }
     return options
@@ -134,7 +142,9 @@ def main():
         print('----')
         print(st.session_state['st_echarts'])
         print('----')
-        chart_options['series'][0]['data'] = st.session_state['st_echarts'][0]['data']
+        # chart_options['series'][0]['data'] = st.session_state['st_echarts'][0]['data']
+        chart_options = st.session_state['st_echarts']
+
     st_echarts(key='st_echarts', options=chart_options, height="400px")
 
 

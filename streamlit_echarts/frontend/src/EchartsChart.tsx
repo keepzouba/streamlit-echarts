@@ -4,7 +4,7 @@ import {
   Streamlit,
   withStreamlitConnection,
 } from "streamlit-component-lib"
-import { isObject } from "lodash"
+import { isObject, isFunction } from "lodash"
 
 import * as echarts from "echarts"
 import "echarts-gl"
@@ -12,7 +12,7 @@ import "echarts-liquidfill"
 import "echarts-wordcloud"
 import ReactEcharts, { EChartsOption } from "echarts-for-react"
 
-import deepMap from "./utils"
+import deepMap, { deepMapFunc } from "./utils"
 
 interface Map {
   mapName: string
@@ -56,11 +56,30 @@ const EchartsChart = (props: ComponentProps) => {
       `${JS_PLACEHOLDER}\\s*(function\\s*.*)\\s*${JS_PLACEHOLDER}`
     )
     let match = funcReg.exec(s)
+
+    // console.log("match", match, s)
+
     if (match) {
       const funcStr = match[1]
+
+      console.log("funcStr", funcStr)
+
       return new Function("return " + funcStr)()
     } else {
       return s
+    }
+  }
+
+  // 将options中的function转换成字符串
+  const evalFunctionToString = (obj: object, key: any, val: any) => {
+    console.log("evalFunctionToString obj", obj, key, val)
+
+    // 如果obj是函数,则返回obj.toString()
+
+    if (isFunction(obj)) {
+      return `${JS_PLACEHOLDER}${obj.toString()}${JS_PLACEHOLDER}`
+    } else {
+      return obj
     }
   }
 
@@ -74,6 +93,10 @@ const EchartsChart = (props: ComponentProps) => {
     return deepMap(obj, evalStringToFunction, {})
   }
 
+  const evalFunctionToStringDeepMap = (obj: object) => {
+    return deepMapFunc(obj, evalFunctionToString, {})
+  }
+
   const {
     options,
     theme,
@@ -84,7 +107,7 @@ const EchartsChart = (props: ComponentProps) => {
     map,
   }: PythonArgs = props.args
 
-  console.log("options", options)
+  // console.log("options", options)
 
   const cleanTheme = registerTheme(theme)
 
@@ -132,57 +155,53 @@ const EchartsChart = (props: ComponentProps) => {
 
   // no need for memo, react-echarts uses fast-deep-equal to compare option/event change and update on change
   const cleanOptions = handlerCleanOptions(evalStringToFunctionDeepMap(options))
-  const cache = useRef<any>(cleanOptions)
 
-  // const [cache, setCache] = useState<any>(cleanOptions)
+  console.log("cleanOptions", cleanOptions === options)
+
+  const cache = useRef<any>(cleanOptions)
 
   const cleanOnEvents: any = {}
   const eventKeys = Object.keys(onEvents)
-  console.log("cleanOptions", cleanOptions)
 
-  // const eventFunctions = Object.values(onEvents);
-  // let callbacks: any[] = [];
-
-  // eventFunctions.forEach((eventFunction, index) => {
-  //   /* eslint-disable-next-line */
-  //   callbacks[index] = useCallback(
-  //     (params: any) => {
-  //       const s = evalStringToFunction(eventFunction as string)(params)
-  //       Streamlit.setComponentValue(s)
-  //     },
-  //     [eventFunction]
-  //   );
-  // });
-
-  // eventKeys.forEach((key: string, index: number) => {
-  //   cleanOnEvents[key] = callbacks[index];
-  // });
   eventKeys.map((key: string) => {
     const eventFunction = onEvents[key]
     /* eslint-disable-next-line */
     cleanOnEvents[key] = useCallback(
       (params: any) => {
         const s = evalStringToFunction(eventFunction)(params)
-        // Streamlit.setComponentValue(s)
+        Streamlit.setComponentValue(s)
       },
       [eventFunction]
     )
-    // cleanOnEvents[key] = (params: any) => {
-    //   const s = evalStringToFunction(eventFunction)(params)
-    //   Streamlit.setComponentValue(s)
-    // }
   })
 
   // 监听图表的dataZoom事件
   const onZoom = useCallback(
     (params: any) => {
-      console.log("onZoom", params)
-      drawGraphic(cleanOptions)
+      // 更新缓存
+
+      const op = cache.current
+
+      if (Array.isArray(op.dataZoom)) {
+        op.dataZoom[0].start = params.start
+        op.dataZoom[0].end = params.end
+      } else if (typeof op.dataZoom === "object") {
+        op.dataZoom.start = params.start
+        op.dataZoom.end = params.end
+      }
+
+      // console.log("onZoom", params, op)
+
+      const s = evalFunctionToStringDeepMap(op)
+
+      Streamlit.setComponentValue(s)
     },
     [cleanOptions]
   )
 
-  cleanOnEvents["dataZoom"] = onZoom
+  if (cleanOptions.listeningDataZoom) {
+    cleanOnEvents["dataZoom"] = onZoom
+  }
 
   useEffect(() => {
     if (null === echartsElementRef.current) {
@@ -227,25 +246,27 @@ const EchartsChart = (props: ComponentProps) => {
   )
 
   const drawGraphic = useCallback(
-    (options: { series: any }) => {
+    (options: any) => {
       console.log("drawGraphic", options)
 
       // 根据cleanOptions中的series的数组长度，判断有几条折线,根据每条折线的数据长度，判断有几个点,给每个点添加拖拽事件
 
       const series = options.series
 
-      const graphic: any[] = []
-
       const myChart = echartsInstanceRef.current
 
       // 必须是type为line的series
 
+      const graphic: any[] = []
+
       setTimeout(() => {
         if (Array.isArray(series)) {
           series.forEach((item1, index1) => {
-            if (Array.isArray(item1.data)) {
-              if (item1.type === "line") {
-                item1.data.forEach((item2: any, index2: any) => {
+            if (item1.draggable) {
+              const data = item1.data
+
+              if (Array.isArray(data)) {
+                data.forEach((item2: any, index2: any) => {
                   const position = myChart?.convertToPixel(
                     {
                       seriesIndex: index1,
@@ -260,6 +281,7 @@ const EchartsChart = (props: ComponentProps) => {
                     type: "circle",
                     position: position,
                     id: "circle-seriesIndex" + index1 + "-dataIndex" + index2,
+
                     shape: {
                       cx: 0,
                       cy: 0,
@@ -280,17 +302,13 @@ const EchartsChart = (props: ComponentProps) => {
                       })
                     },
 
-                    onmousemove: function (dx: any, dy: any) {
-                      console.log("onmousemove")
-
-                      // myChart?.dispatchAction({
-                      //   type: "showTip",
-                      //   seriesIndex: 0,
-                      //   dataIndex: index2,
-                      // })
-                    },
-
                     ondragend: function (dx: any, dy: any) {
+                      // 清除所有的点
+
+                      myChart?.setOption({
+                        graphic: [],
+                      })
+
                       // 对比前后的数据，如果有变化，就更新
                       const prePos = position
 
@@ -298,56 +316,140 @@ const EchartsChart = (props: ComponentProps) => {
 
                       // console.log("prePos", prePos, "curPos", curPos)
 
-                      console.log("cache.current", cache.current)
-
                       // 只需要对比y轴数据的变化
                       if (prePos && prePos[1] === curPos[1]) return
 
-                      const new_series = cache.current.series
+                      const op = cache.current
 
-                      Streamlit.setComponentValue(new_series)
+                      const s = evalFunctionToStringDeepMap(op)
+
+                      Streamlit.setComponentValue(s)
+                    },
+
+                    onmousemove: function () {
+                      showTooltip(index1, index2)
+                    },
+
+                    onmouseout: function () {
+                      hideTooltip()
                     },
 
                     z: 100,
                   })
+                })
+              }
 
-                  // 绘制一个一个原点,表示初始位置
-                  graphic.push({
-                    type: "circle",
-                    position: position,
-                    id:
-                      "circle-seriesIndex" +
-                      index1 +
-                      "-dataIndex" +
-                      index2 +
-                      "origin",
-                    shape: {
-                      cx: 0,
-                      cy: 0,
-                      r: item1.originSymbolSize,
-                    },
-                    style: {
-                      fill: item1.originItemStyle.color,
-                      opacity: item1.originItemStyle.opacity,
-                    },
-                    // invisible: true,
-                    // draggable: false,
+              // 绘制一个初始位置的点
+              const sourceData = item1.sourceData
 
-                    z: 99,
-                  })
+              if (sourceData && Array.isArray(sourceData)) {
+                sourceData.forEach((item3: any, index3: any) => {
+                  const position = myChart?.convertToPixel(
+                    {
+                      seriesIndex: index1,
+                    },
+                    item3
+                  )
+                  if (item1.origin_symbolSize) {
+                    graphic.push({
+                      type: "circle",
+                      position: position,
+                      id:
+                        "circle-seriesIndex" +
+                        index1 +
+                        "-dataIndex" +
+                        index3 +
+                        "origin",
+                      shape: {
+                        cx: 0,
+                        cy: 0,
+                        r: item1.origin_symbolSize,
+                      },
+                      style: {
+                        fill: item1.originItemStyle.color,
+                        opacity: item1.originItemStyle.opacity,
+                      },
+
+                      z: 99,
+                    })
+                  }
                 })
               }
             }
           })
         }
 
+        // console.log("graphic", graphic)
+
         myChart?.setOption({
           graphic: [...graphic],
+          // tooltip: {
+          //   triggerOn: "none",
+          //   formatter: function (params: any) {
+          //     console.log("params", params)
+
+          //     return (
+          //       params.seriesName +
+          //       "<br>" +
+          //       params.name +
+          //       ": " +
+          //       params.data[1].toFixed(2)
+          //     )
+          //   },
+          // },
         })
       }, 1000)
     },
     [onPointDragging]
   ) // Add dependencies here if any
+
+  function showTooltip(seriesIndex: number, dataIndex: any) {
+    const myChart = echartsInstanceRef.current
+    myChart?.dispatchAction({
+      type: "showTip",
+      seriesIndex: seriesIndex,
+      dataIndex: dataIndex,
+    })
+  }
+  function hideTooltip() {
+    const myChart = echartsInstanceRef.current
+    myChart?.dispatchAction({
+      type: "hideTip",
+    })
+  }
+
+  // const removeGraphic = useCallback((options: any) => {
+  //   const myChart = echartsInstanceRef.current
+
+  //   const graphic: any[] = []
+
+  //   const _graphic = myChart?.getOption().graphic
+
+  //   if (Array.isArray(_graphic)) {
+  //     _graphic.forEach((item: any, index: number) => {
+  //       const elements = item.elements
+
+  //       console.log("elements", elements)
+
+  //       if (Array.isArray(elements)) {
+  //         elements.forEach((item2: any, index2: number) => {
+  //           if (item2.id.indexOf("circle") > -1) {
+  //             graphic.push({
+  //               id: item2.id,
+  //               $action: "remove",
+  //             })
+  //           }
+  //         })
+  //       }
+  //     })
+  //   }
+
+  //   console.log("_graphic", _graphic)
+
+  //   myChart?.setOption({
+  //     graphic: [...graphic],
+  //   })
+  // }, [])
 
   useEffect(() => {
     drawGraphic(cleanOptions)
@@ -357,24 +459,6 @@ const EchartsChart = (props: ComponentProps) => {
 
   return (
     <>
-      <button
-        onClick={() => {
-          const myChart = echartsInstanceRef.current
-          const op = myChart?.getOption()
-
-          // 取出series中每项数据中的data
-          const data =
-            op?.series && op.series.length > 0
-              ? JSON.stringify(op.series[0].data)
-              : ""
-
-          console.log("op", op)
-
-          // Streamlit.setComponentValue(data)
-        }}
-      >
-        更新图表
-      </button>
       <ReactEcharts
         ref={echartsElementRef}
         option={cleanOptions}
